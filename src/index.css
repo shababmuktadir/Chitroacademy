@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* Tailwind v4 Config Theme (Alternative to tailwind.config.js) */
+@theme {
+  --font-montserrat: 'Montserrat', sans-serif;
+  --font-almendra: 'Almendra', serif;
+  --font-handwriting: 'Caveat', cursive;
+  --font-bangla: 'Noto Serif Bengali', serif;
+  
+  /* System Global Theme Colors (Optional Configuration) */
+  --color-brand-light: #ffffff;
+  --color-brand-dark: #121212;
+}
+
+/* manual dark mode tracking er jonno explicit logic variant */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* --- Font Faces --- */
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../assets/fonts/english/montserrat/Montserrat-Variable.ttf') format('truetype');
+  font-weight: 100 900;
+}
+@font-face {
+  font-family: 'Almendra';
+  src: url('../assets/fonts/english/almendra/Almendra-Regular.ttf') format('truetype');
+  font-weight: normal;
+}
+@font-face {
+  font-family: 'Almendra Bold';
+  src: url('../assets/fonts/english/almendra/Almendra-Bold.ttf') format('truetype');
+  font-weight: bold;
+}
+@font-face {
+  font-family: 'Caveat';
+  src: url('../assets/fonts/english/handwriting/Caveat-Variable.ttf') format('truetype');
+  font-weight: 400 700;
+}
+@font-face {
+  font-family: 'Noto Serif Bengali';
+  src: url('../assets/fonts/bangla/noto-serif-bengali/NotoSerifBengali-Variable.ttf') format('truetype');
+  font-weight: 100 900;
+}
+
+/* Base style setups */
+body {
+  @apply bg-white text-slate-900 transition-colors duration-300;
+}
+
+body.dark {
+  @apply bg-[#121212] text-slate-100;
+}

@@ -1,0 +1,35 @@
+{
+  "subtitle": "Track your fine art masterclasses, live schedules, and payment verification status.",
+  "overview": "Dashboard Overview",
+  "myCourses": "My Enrolled Courses",
+  "pending": "Pending Approvals",
+  "billing": "Payment History",
+  "profile": "Profile Details",
+  "stats": {
+    "unlocked": "Unlocked Courses",
+    "unlockedSub": "Active Lifetime Access",
+    "pending": "Pending Verifications",
+    "pendingSub": "Awaiting Admin Approval",
+    "investment": "Total Investment",
+    "investmentSub": "Verified Transactions"
+  },
+  "recentCourses": "Recently Unlocked Masterclasses",
+  "viewAll": "View All",
+  "watch": "Watch",
+  "startClass": "Start Class",
+  "noCourses": "No verified courses found yet!",
+  "noCoursesSub": "If you purchased a course, please wait for admin verification.",
+  "table": {
+    "courseDetails": "Course Details",
+    "trxAndMethod": "TrxID & Method",
+    "date": "Date",
+    "amount": "Amount",
+    "status": "Status"
+  },
+  "profileInfo": {
+    "title": "Personal Account Information",
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "uid": "UID"
+  }
+}

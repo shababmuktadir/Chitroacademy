@@ -1,0 +1,99 @@
+{
+  "hero": {
+    "badge": "✨ Master Digital Art & Vector Crafts",
+    "title1": "Where Imagination Meets",
+    "titleHighlight": "Artistic Precision",
+    "description": "Welcome to Chitro Academy. Learn professional vector illustration, book cover design, and digital image manipulation with industry standards.",
+    "ctaStart": "Get Started Free",
+    "ctaExplore": "Explore Artworks",
+    "ctaDashboard": "Go to Dashboard"
+  },
+  "brandOverview": {
+    "tagline": "🎨 ABOUT CHITRO ACADEMY",
+    "heading": "Crafting Stories Through",
+    "headingHighlight": "Vectors & Pixels",
+    "description1": "Chitro Academy is a premier digital creative hub dedicated to mastering vector graphics, atmospheric visual storytelling, and book cover mockups.",
+    "description2": "From precise compositional modifications to style replication and professional vector art direction, we bridge the gap between imagination and industry-grade artistic execution.",
+    "stat1Number": "500+",
+    "stat1Label": "Creative Artworks",
+    "stat2Number": "100%",
+    "stat2Label": "Vector Precision",
+    "stat3Number": "24/7",
+    "stat3Label": "Artist Community"
+  },
+  "features": {
+    "tagline": "⚡ CORE SPECIALIZATIONS",
+    "heading": "Why Choose Chitro Academy?",
+    "subheading": "Master industry-recognized digital skills combining creative vision with technical precision.",
+    "card1Title": "Vector Illustration",
+    "card1Desc": "Create scalable, razor-sharp vector graphics for branding, logos, and digital merchandise using advanced Adobe Illustrator techniques.",
+    "card2Title": "Book Cover Crafting",
+    "card2Desc": "Design eye-catching front covers, spines, and realistic 3D mockups tailored for both print and digital publishing standards.",
+    "card3Title": "Style Replication",
+    "card3Desc": "Analyze and reproduce complex artistic styles, lighting moods, and atmospheric adjustments with pixel-perfect accuracy.",
+    "card4Title": "Composition & Art Direction",
+    "card4Desc": "Master advanced object manipulation, seamless element replacement, and structural balance in professional visual compositions."
+  },
+  "socialProof": {
+    "tagline": "🌟 TRUSTED BY CREATIVES WORLDWIDE",
+    "heading": "Proven Track Record of Excellence",
+    "subheading": "Our alumni create industry-standard designs for publishing houses, creative agencies, and global merchant operations.",
+    "stat1Num": "2,500+",
+    "stat1Title": "Happy Learners",
+    "stat1Desc": "Aspiring artists & designers mentored through structured modules.",
+    "stat2Num": "98%",
+    "stat2Title": "Satisfaction Rate",
+    "stat2Desc": "Based on course completion and artwork review evaluations.",
+    "stat3Num": "300+",
+    "stat3Title": "Published Covers",
+    "stat3Desc": "Commercial book covers and promotional banners live in the market.",
+    "brandTitle": "Graduates & Creators Active In:"
+  },
+  "reviews": {
+    "tagline": "💬 STUDENT FEEDBACK",
+    "heading": "Stories From Our Community",
+    "subheading": "Hear what our students and professional creators have to say about learning and designing with Chitro Academy.",
+    "rev1Name": "Tanvir Rahman",
+    "rev1Role": "Vector Illustrator",
+    "rev1Text": "The vector art direction and style replication lessons completely transformed my workflow. I am now working confidently with commercial book cover projects.",
+    "rev2Name": "Sumaiya Akter",
+    "rev2Role": "Book Cover Designer",
+    "rev2Text": "Chitro Academy taught me the exact balance between artistic vision and compositional precision. Best creative learning platform in Bangladesh!",
+    "rev3Name": "Fahim Hasan",
+    "rev3Role": "Freelance Graphic Designer",
+    "rev3Text": "Atmospheric adjustments and object manipulation were always tough for me. The structured guidance here made everything crystal clear."
+  },
+  "collaborate": {
+    "tagline": "🤝 LET'S BUILD TOGETHER",
+    "heading": "Want to Collaborate With Chitro Academy?",
+    "description": "Whether you are a publishing house looking for commercial book cover designs, a brand needing custom vector illustrations, or an educational partner looking to sponsor workshops—we are open for high-impact partnerships.",
+    "bullet1": "Commercial Book Cover & Spine Design",
+    "bullet2": "Custom Vector Branding & Asset Direction",
+    "bullet3": "Art Workshops & Creative Mentorship",
+    "ctaBtn": "Partner With Us"
+  },
+  "faq": {
+    "tagline": "❓ GOT QUESTIONS?",
+    "heading": "Frequently Asked Questions",
+    "subheading": "Everything you need to know about our courses, vector illustration methodology, and community guidelines.",
+    "q1": "Are the courses suitable for absolute beginners?",
+    "a1": "Yes! Our vector illustration and book cover design modules start from the very basics of Adobe Illustrator and progress step-by-step to advanced industry standards.",
+    "q2": "How do I access the paid courses after enrollment?",
+    "a2": "Once enrolled, you can log into your student dashboard anytime using your account credentials. You will get instant access to structured video modules, resources, and live project files.",
+    "q3": "Can I request custom style replication or book cover design projects?",
+    "a3": "Absolutely! Apart from our learning academy, our professional studio team handles commercial book covers, spine layouts, and custom vector art direction. Reach out via the Contact page.",
+    "q4": "Do you provide community support or mentorship?",
+    "a4": "Yes, all enrolled learners gain exclusive access to our 24/7 artist community where instructors and peer creators review artworks and solve technical hurdles."
+  },
+  "newsletter": {
+    "tagline": "📬 STAY CREATIVE",
+    "heading": "Join 2,500+ Digital Artists & Designers",
+    "description": "Subscribe to our weekly dispatch for expert tutorials on Adobe Illustrator, free vector resources, book cover design inspiration, and early access to new course modules.",
+    "placeholder": "Enter your email address...",
+    "btnText": "Subscribe Free",
+    "loadingText": "Subscribing...",
+    "successMsg": "🎉 Thank you! Check your email inbox for a welcome message.",
+    "errorMsg": "❌ Something went wrong. Please try again.",
+    "disclaimer": "No spam ever. Unsubscribe at any time with one click."
+  }
+}
