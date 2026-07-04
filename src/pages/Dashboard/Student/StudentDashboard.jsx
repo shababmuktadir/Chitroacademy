@@ -1,4 +1,4 @@
-// src/pages/StudentDashboard.jsx (or wherever it is located)
+// src/pages/Dashboard/Student/StudentDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { db } from '../../../config/firebase';
 import { useAuth } from '../../../context/AuthContext';

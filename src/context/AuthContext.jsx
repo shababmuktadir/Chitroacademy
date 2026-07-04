@@ -1,5 +1,5 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { auth, db, googleProvider, appleProvider } from '../config/firebase';
 import {
   createUserWithEmailAndPassword,
@@ -21,6 +21,9 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Ref to store the Firestore unsubscribe function
+  const unsubscribeFirestoreRef = useRef(null);
+
   // 1. Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -31,43 +34,48 @@ export const AuthProvider = ({ children }) => {
 
   // 2. Listen to Firestore document when user changes
   useEffect(() => {
-    let unsubscribeFirestore = null;
+    // Clean up previous listener
+    if (unsubscribeFirestoreRef.current) {
+      unsubscribeFirestoreRef.current();
+      unsubscribeFirestoreRef.current = null;
+    }
 
-    const listenToUserDoc = async () => {
-      if (!user) {
-        setUserData(null);
-        setLoading(false);
-        return;
-      }
+    if (!user) {
+      setUserData(null);
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      const isAdmin = user.email === ADMIN_EMAIL;
-      const collectionName = isAdmin ? 'admin' : 'students';
-      const docRef = doc(db, collectionName, user.uid);
+    setLoading(true);
 
-      unsubscribeFirestore = onSnapshot(
-        docRef,
-        (docSnap) => {
-          if (docSnap.exists()) {
-            setUserData({ id: docSnap.id, ...docSnap.data() });
-          } else {
-            // If document doesn't exist, userData stays null
-            setUserData(null);
-          }
-          setLoading(false);
-        },
-        (error) => {
-          console.error('Firestore listener error:', error);
-          setLoading(false);
+    const isAdmin = user.email === ADMIN_EMAIL;
+    const collectionName = isAdmin ? 'admin' : 'students';
+    const docRef = doc(db, collectionName, user.uid);
+
+    // Set up onSnapshot listener
+    unsubscribeFirestoreRef.current = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setUserData({ id: docSnap.id, ...docSnap.data() });
+        } else {
+          // If the document is missing, we don't create it here;
+          // creation happens during signup/login flows.
+          setUserData(null);
         }
-      );
-    };
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Firestore listener error:', error);
+        setLoading(false);
+      }
+    );
 
-    listenToUserDoc();
-
+    // Cleanup listener on unmount or when user changes
     return () => {
-      if (unsubscribeFirestore) {
-        unsubscribeFirestore();
+      if (unsubscribeFirestoreRef.current) {
+        unsubscribeFirestoreRef.current();
+        unsubscribeFirestoreRef.current = null;
       }
     };
   }, [user]);
@@ -81,7 +89,7 @@ export const AuthProvider = ({ children }) => {
 
       await updateProfile(newUser, { displayName: name });
 
-      // Send verification email for non‑admin users
+      // Send verification email for non-admin users
       if (email !== ADMIN_EMAIL) {
         try {
           await sendEmailVerification(newUser);
@@ -92,35 +100,46 @@ export const AuthProvider = ({ children }) => {
 
       const isAdmin = email === ADMIN_EMAIL;
       const targetCollection = isAdmin ? 'admin' : 'students';
+      const docRef = doc(db, targetCollection, newUser.uid);
 
-      const newDocData = isAdmin
-        ? {
-            uid: newUser.uid,
-            email,
-            role: 'admin',
-            displayName: name,
-            createdAt: new Date().toISOString(),
-          }
-        : {
-            uid: newUser.uid,
-            displayName: name,
-            email,
-            role: 'student',
-            emailVerified: false,
-            personalData: {
-              phone: '',
-              bio: '',
-              institution: '',
-              address: '',
-            },
-            enrolledFreeCourses: [],
-            purchasedCourses: [],
-            paymentHistory: [],
-            joinedAt: new Date().toISOString(),
-          };
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        // Create new student/admin document
+        const docData = isAdmin
+          ? {
+              uid: newUser.uid,
+              email,
+              role: 'admin',
+              displayName: name,
+              createdAt: new Date().toISOString(),
+            }
+          : {
+              uid: newUser.uid,
+              displayName: name,
+              email,
+              role: 'student',
+              emailVerified: false,
+              personalData: {
+                phone: '',
+                bio: '',
+                institution: '',
+                address: '',
+              },
+              enrolledFreeCourses: [],
+              purchasedCourses: [],
+              paymentHistory: [],
+              joinedAt: new Date().toISOString(),
+            };
+        await setDoc(docRef, docData);
+        // UserData will be updated via the listener
+      } else {
+        // Document already exists – should not happen for new signup, but merge update if needed
+        const updateData = isAdmin
+          ? { displayName: name }
+          : { displayName: name, email };
+        await setDoc(docRef, updateData, { merge: true });
+      }
 
-      await setDoc(doc(db, targetCollection, newUser.uid), newDocData);
-      setUserData(newDocData);
       setLoading(false);
       return newUser;
     } catch (error) {
@@ -173,7 +192,7 @@ export const AuthProvider = ({ children }) => {
 
       if (!docSnap.exists()) {
         // Create new document
-        const initialData = isAdmin
+        const docData = isAdmin
           ? {
               uid: loggedUser.uid,
               email: ADMIN_EMAIL,
@@ -190,26 +209,29 @@ export const AuthProvider = ({ children }) => {
                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
               role: 'student',
               emailVerified: true,
-              personalData: { phone: '', bio: '', institution: '', address: '' },
+              personalData: {
+                phone: '',
+                bio: '',
+                institution: '',
+                address: '',
+              },
               enrolledFreeCourses: [],
               purchasedCourses: [],
               paymentHistory: [],
               joinedAt: new Date().toISOString(),
             };
-        await setDoc(docRef, initialData);
-        // userData will be updated by the Firestore listener
+        await setDoc(docRef, docData);
       } else {
-        // Document exists – update only non‑sensitive fields with merge
-        const updatePayload = {
+        // Document exists – update only safe fields with merge
+        const updateData = {
           displayName: loggedUser.displayName || 'Student',
           photoURL:
             loggedUser.photoURL ||
             `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
           email: loggedUser.email,
-          // Do NOT include purchasedCourses, paymentHistory, personalData
         };
-        await setDoc(docRef, updatePayload, { merge: true });
-        // userData will be updated by the listener
+        // Do NOT include purchasedCourses, paymentHistory, personalData
+        await setDoc(docRef, updateData, { merge: true });
       }
 
       setLoading(false);
@@ -222,6 +244,11 @@ export const AuthProvider = ({ children }) => {
 
   // 6. Logout
   const logout = async () => {
+    // Clean up Firestore listener before logout
+    if (unsubscribeFirestoreRef.current) {
+      unsubscribeFirestoreRef.current();
+      unsubscribeFirestoreRef.current = null;
+    }
     await signOut(auth);
     setUser(null);
     setUserData(null);
