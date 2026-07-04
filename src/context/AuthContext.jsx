@@ -1,79 +1,78 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db, googleProvider, appleProvider } from '../config/firebase';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
-  signOut, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
   onAuthStateChanged,
   updateProfile,
-  sendEmailVerification 
-} from "firebase/auth";
-import { doc, setDoc, getDoc, onSnapshot } from "firebase/firestore";
+  sendEmailVerification,
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
-// 🔥 আপনার নির্ধারিত অ্যাডমিন ইমেইল
-const ADMIN_EMAIL = "shababmuktadir@gmail.com";
+const ADMIN_EMAIL = 'shababmuktadir@gmail.com';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ১. রিয়েল-টাইম সেশন ও ডেটাবেস ট্র্যাকার
+  // 1. Listen to Firebase Auth state
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      
-      if (currentUser) {
-        // যদি অ্যাডমিন হয়
-        if (currentUser.email === ADMIN_EMAIL) {
-          const adminRef = doc(db, "admin", currentUser.uid);
-          const unsubscribeAdmin = onSnapshot(adminRef, (docSnap) => {
-            if (docSnap.exists()) {
-              setUserData({ id: docSnap.id, ...docSnap.data() });
-            } else {
-              // ডেটাবেসে না থাকলে অটো বানিয়ে নেবে
-              const adminInitialData = {
-                uid: currentUser.uid,
-                email: ADMIN_EMAIL,
-                role: 'admin',
-                displayName: currentUser.displayName || 'Admin Shabab',
-                permissions: ['all'],
-                updatedAt: new Date().toISOString()
-              };
-              setDoc(adminRef, adminInitialData);
-              setUserData(adminInitialData);
-            }
-            setLoading(false);
-          });
-          return () => unsubscribeAdmin();
-        } 
-        // যদি সাধারণ স্টুডেন্ট হয়
-        else {
-          const studentRef = doc(db, "students", currentUser.uid);
-          const unsubscribeStudent = onSnapshot(studentRef, (docSnap) => {
-            if (docSnap.exists()) {
-              setUserData({ id: docSnap.id, ...docSnap.data() });
-            } else {
-              setUserData(null);
-            }
-            setLoading(false);
-          });
-          return () => unsubscribeStudent();
-        }
-      } else {
-        setUserData(null);
-        setLoading(false);
-      }
     });
-
-    return () => unsubscribeAuth();
+    return unsubscribeAuth;
   }, []);
 
-  // ২. ইমেইল ও পাসওয়ার্ড দিয়ে সাইনআপ (ইমেইল ভেরিফিকেশনসহ)
+  // 2. Listen to Firestore document when user changes
+  useEffect(() => {
+    let unsubscribeFirestore = null;
+
+    const listenToUserDoc = async () => {
+      if (!user) {
+        setUserData(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const isAdmin = user.email === ADMIN_EMAIL;
+      const collectionName = isAdmin ? 'admin' : 'students';
+      const docRef = doc(db, collectionName, user.uid);
+
+      unsubscribeFirestore = onSnapshot(
+        docRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            setUserData({ id: docSnap.id, ...docSnap.data() });
+          } else {
+            // If document doesn't exist, userData stays null
+            setUserData(null);
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Firestore listener error:', error);
+          setLoading(false);
+        }
+      );
+    };
+
+    listenToUserDoc();
+
+    return () => {
+      if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+      }
+    };
+  }, [user]);
+
+  // 3. Email/Password Signup
   const signup = async (name, email, password) => {
     setLoading(true);
     try {
@@ -82,42 +81,43 @@ export const AuthProvider = ({ children }) => {
 
       await updateProfile(newUser, { displayName: name });
 
-      // ইমেইল ভেরিফিকেশন লিংক পাঠানো (অ্যাডমিন ছাড়া সাধারণ ইউজারদের জন্য)
+      // Send verification email for non‑admin users
       if (email !== ADMIN_EMAIL) {
         try {
           await sendEmailVerification(newUser);
         } catch (err) {
-          console.warn("Verification email send failed:", err);
+          console.warn('Verification email send failed:', err);
         }
       }
 
       const isAdmin = email === ADMIN_EMAIL;
-      const targetCollection = isAdmin ? "admin" : "students";
+      const targetCollection = isAdmin ? 'admin' : 'students';
 
-      // ফায়ারস্টোর ডেটাবেসের জন্য সাজানো স্কিমা
-      const newDocData = isAdmin ? {
-        uid: newUser.uid,
-        email: email,
-        role: 'admin',
-        displayName: name,
-        createdAt: new Date().toISOString()
-      } : {
-        uid: newUser.uid,
-        displayName: name,
-        email: email,
-        role: 'student',
-        emailVerified: false,
-        personalData: {
-          phone: '',
-          bio: '',
-          institution: '',
-          address: ''
-        },
-        enrolledFreeCourses: [],
-        purchasedCourses: [],
-        paymentHistory: [],
-        joinedAt: new Date().toISOString()
-      };
+      const newDocData = isAdmin
+        ? {
+            uid: newUser.uid,
+            email,
+            role: 'admin',
+            displayName: name,
+            createdAt: new Date().toISOString(),
+          }
+        : {
+            uid: newUser.uid,
+            displayName: name,
+            email,
+            role: 'student',
+            emailVerified: false,
+            personalData: {
+              phone: '',
+              bio: '',
+              institution: '',
+              address: '',
+            },
+            enrolledFreeCourses: [],
+            purchasedCourses: [],
+            paymentHistory: [],
+            joinedAt: new Date().toISOString(),
+          };
 
       await setDoc(doc(db, targetCollection, newUser.uid), newDocData);
       setUserData(newDocData);
@@ -129,20 +129,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ৩. ইমেইল লগইন (ভেরিফিকেশন চেকসহ)
+  // 4. Email/Password Login (with verification check)
   const login = async (email, password) => {
     setLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const loggedUser = result.user;
 
-      // স্টুডেন্টদের ক্ষেত্রে ইমেইল ভেরিফাই না করা থাকলে লগইন ব্লক করা
       if (email !== ADMIN_EMAIL && !loggedUser.emailVerified) {
         await signOut(auth);
         setLoading(false);
-        const unverifiedError = new Error("আপনার ইমেইলটি এখনো ভেরিফাই করা হয়নি! দয়া করে আপনার ইনবক্স চেক করে ভেরিফিকেশন লিংকে ক্লিক করুন।");
-        unverifiedError.code = "auth/unverified-email";
-        throw unverifiedError;
+        const error = new Error(
+          'আপনার ইমেইলটি এখনো ভেরিফাই করা হয়নি! দয়া করে আপনার ইনবক্স চেক করে ভেরিফিকেশন লিংকে ক্লিক করুন।'
+        );
+        error.code = 'auth/unverified-email';
+        throw error;
       }
 
       setLoading(false);
@@ -153,7 +154,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ৪. সোশ্যাল লগইন (Google / Apple)
+  // 5. Social Login (Google / Apple)
   const socialLogin = async (providerName) => {
     setLoading(true);
     try {
@@ -165,35 +166,50 @@ export const AuthProvider = ({ children }) => {
       const result = await signInWithPopup(auth, provider);
       const loggedUser = result.user;
       const isAdmin = loggedUser.email === ADMIN_EMAIL;
-      const targetCollection = isAdmin ? "admin" : "students";
-
+      const targetCollection = isAdmin ? 'admin' : 'students';
       const docRef = doc(db, targetCollection, loggedUser.uid);
+
       const docSnap = await getDoc(docRef);
 
-      // যদি ডেটাবেসে আগে থেকে না থাকে, নতুন করে স্কিমা তৈরি করবে
       if (!docSnap.exists()) {
-        const initialData = isAdmin ? {
-          uid: loggedUser.uid,
-          email: ADMIN_EMAIL,
-          role: 'admin',
-          displayName: loggedUser.displayName || 'Admin Shabab',
-          createdAt: new Date().toISOString()
-        } : {
-          uid: loggedUser.uid,
-          displayName: loggedUser.displayName || 'Student',
-          email: loggedUser.email,
-          photoURL: loggedUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
-          role: 'student',
-          emailVerified: true,
-          personalData: { phone: '', bio: '', institution: '', address: '' },
-          enrolledFreeCourses: [],
-          purchasedCourses: [],
-          paymentHistory: [],
-          joinedAt: new Date().toISOString()
-        };
-
+        // Create new document
+        const initialData = isAdmin
+          ? {
+              uid: loggedUser.uid,
+              email: ADMIN_EMAIL,
+              role: 'admin',
+              displayName: loggedUser.displayName || 'Admin Shabab',
+              createdAt: new Date().toISOString(),
+            }
+          : {
+              uid: loggedUser.uid,
+              displayName: loggedUser.displayName || 'Student',
+              email: loggedUser.email,
+              photoURL:
+                loggedUser.photoURL ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
+              role: 'student',
+              emailVerified: true,
+              personalData: { phone: '', bio: '', institution: '', address: '' },
+              enrolledFreeCourses: [],
+              purchasedCourses: [],
+              paymentHistory: [],
+              joinedAt: new Date().toISOString(),
+            };
         await setDoc(docRef, initialData);
-        setUserData(initialData);
+        // userData will be updated by the Firestore listener
+      } else {
+        // Document exists – update only non‑sensitive fields with merge
+        const updatePayload = {
+          displayName: loggedUser.displayName || 'Student',
+          photoURL:
+            loggedUser.photoURL ||
+            `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
+          email: loggedUser.email,
+          // Do NOT include purchasedCourses, paymentHistory, personalData
+        };
+        await setDoc(docRef, updatePayload, { merge: true });
+        // userData will be updated by the listener
       }
 
       setLoading(false);
@@ -204,7 +220,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ৫. লগআউট
+  // 6. Logout
   const logout = async () => {
     await signOut(auth);
     setUser(null);
@@ -212,7 +228,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userData, signup, login, socialLogin, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, userData, signup, login, socialLogin, logout, loading }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
