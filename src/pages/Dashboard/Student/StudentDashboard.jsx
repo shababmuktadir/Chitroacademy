@@ -1,4 +1,3 @@
-// src/pages/Dashboard/Student/StudentDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { db } from '../../../config/firebase';
 import { useAuth } from '../../../context/AuthContext';
@@ -33,13 +32,13 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If no user, stop loading and don't run the snapshot
-    if (!user) {
+    // ইউজার লগইন না থাকলে লোডিং বন্ধ করে রিটার্ন করবে
+    if (!user?.uid) {
       setLoading(false);
       return;
     }
 
-    // 1. Query payments using the user's UID (not email)
+    // ১. ফায়ারবেস সিকিউরিটি রুলস অনুযায়ী ইউজারের নিজস্ব 'uid' দিয়ে পেমেন্ট কুয়েরি করা হচ্ছে
     const q = query(collection(db, 'payments'), where('uid', '==', user.uid));
 
     const unsubscribe = onSnapshot(
@@ -48,7 +47,7 @@ export default function StudentDashboard() {
         const paymentData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         setPayments(paymentData);
 
-        // 2. Fetch course details for verified payments
+        // ২. শুধুমাত্র 'verified' স্ট্যাটাসের কোর্সগুলোর বিস্তারিত ডেটাবেস থেকে লোড করা
         const verifiedIds = paymentData
           .filter((p) => p.status === 'verified')
           .map((p) => p.courseId)
@@ -79,6 +78,7 @@ export default function StudentDashboard() {
     return () => unsubscribe();
   }, [user]);
 
+  // ফিল্টার করা পেমেন্ট লিস্ট ও হিসাব
   const verifiedPayments = payments.filter((p) => p.status === 'verified');
   const pendingPayments = payments.filter((p) => p.status === 'pending');
   const totalSpent = verifiedPayments.reduce(
@@ -86,6 +86,7 @@ export default function StudentDashboard() {
     0
   );
 
+  // ক্লাসের ভিডিও বা ওয়ার্কশপ পেজে নিয়ে যাওয়ার ফাংশন
   const handleWatchClass = (course) => {
     navigate(`/courses/play/${course.id}`, { state: { course } });
   };
@@ -103,10 +104,11 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col md:flex-row select-none transition-colors duration-300">
-      {/* ================= Fixed Sidebar ================= */}
+      
+      {/* ================= ফিক্সড ও স্টিকি সাইডবার (Sticky Sidebar) ================= */}
       <aside className="w-full md:w-72 bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 p-6 flex flex-col justify-between md:sticky md:top-0 md:h-screen md:overflow-y-auto z-20 shadow-sm transition-colors duration-300">
         <div className="space-y-6">
-          {/* Profile card */}
+          {/* জিমেইল প্রোফাইল হেডার কার্ড */}
           <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 flex items-center gap-3">
             {user?.photoURL ? (
               <img
@@ -132,7 +134,7 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* মেনু নেভিগেশন */}
           <nav className="space-y-1.5">
             {[
               { id: 'overview', label: t('overview', 'Dashboard Overview'), icon: Layers },
@@ -171,7 +173,7 @@ export default function StudentDashboard() {
           </nav>
         </div>
 
-        {/* Bottom buttons */}
+        {/* সাইডবার নিচের বাটনসমূহ */}
         <div className="pt-6 border-t border-slate-200 dark:border-slate-800 mt-6 space-y-2">
           <button
             onClick={() => navigate('/')}
@@ -191,9 +193,9 @@ export default function StudentDashboard() {
         </div>
       </aside>
 
-      {/* ================= Main Content ================= */}
+      {/* ================= মূল কনটেন্ট এরিয়া ================= */}
       <main className="flex-1 p-6 sm:p-10 overflow-y-auto space-y-8 max-w-6xl">
-        {/* Top banner */}
+        {/* টপ ব্যানার */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/40 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-white">
           <div>
             <span className="text-[10px] uppercase font-black tracking-widest px-3 py-1 bg-amber-500/10 text-amber-400 rounded-full border border-amber-500/20 inline-flex items-center gap-1.5 mb-2">
@@ -223,7 +225,7 @@ export default function StudentDashboard() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-8"
           >
-            {/* Stats cards */}
+            {/* পরিসংখ্যান কার্ড */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm transition-colors duration-300">
                 <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
@@ -271,7 +273,7 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            {/* Recently unlocked courses */}
+            {/* সম্প্রতি আনলক হওয়া কোর্স প্রিভিউ */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-black text-slate-800 dark:text-white">

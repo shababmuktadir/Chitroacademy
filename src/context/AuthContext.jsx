@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { auth, db, googleProvider, appleProvider } from '../config/firebase';
 import {
@@ -10,7 +9,7 @@ import {
   updateProfile,
   sendEmailVerification,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -21,10 +20,10 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Ref to store the Firestore unsubscribe function
+  // Ref to store the Firestore unsubscribe function[cite: 6]
   const unsubscribeFirestoreRef = useRef(null);
 
-  // 1. Listen to Firebase Auth state
+  // ১. লিিসেন টু ফায়ারবেস অথেনটিকেশন স্টেট[cite: 6]
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -32,9 +31,8 @@ export const AuthProvider = ({ children }) => {
     return unsubscribeAuth;
   }, []);
 
-  // 2. Listen to Firestore document when user changes
+  // ২. রিয়েল-টাইম ফায়ারস্টোর লিসেনার সেটআপ[cite: 6]
   useEffect(() => {
-    // Clean up previous listener
     if (unsubscribeFirestoreRef.current) {
       unsubscribeFirestoreRef.current();
       unsubscribeFirestoreRef.current = null;
@@ -52,15 +50,12 @@ export const AuthProvider = ({ children }) => {
     const collectionName = isAdmin ? 'admin' : 'students';
     const docRef = doc(db, collectionName, user.uid);
 
-    // Set up onSnapshot listener
     unsubscribeFirestoreRef.current = onSnapshot(
       docRef,
       (docSnap) => {
         if (docSnap.exists()) {
           setUserData({ id: docSnap.id, ...docSnap.data() });
         } else {
-          // If the document is missing, we don't create it here;
-          // creation happens during signup/login flows.
           setUserData(null);
         }
         setLoading(false);
@@ -71,7 +66,6 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    // Cleanup listener on unmount or when user changes
     return () => {
       if (unsubscribeFirestoreRef.current) {
         unsubscribeFirestoreRef.current();
@@ -80,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, [user]);
 
-  // 3. Email/Password Signup
+  // ৩. ইমেইল/পাসওয়ার্ড সাইনআপ[cite: 6]
   const signup = async (name, email, password) => {
     setLoading(true);
     try {
@@ -89,7 +83,6 @@ export const AuthProvider = ({ children }) => {
 
       await updateProfile(newUser, { displayName: name });
 
-      // Send verification email for non-admin users
       if (email !== ADMIN_EMAIL) {
         try {
           await sendEmailVerification(newUser);
@@ -104,7 +97,6 @@ export const AuthProvider = ({ children }) => {
 
       const docSnap = await getDoc(docRef);
       if (!docSnap.exists()) {
-        // Create new student/admin document
         const docData = isAdmin
           ? {
               uid: newUser.uid,
@@ -131,9 +123,7 @@ export const AuthProvider = ({ children }) => {
               joinedAt: new Date().toISOString(),
             };
         await setDoc(docRef, docData);
-        // UserData will be updated via the listener
       } else {
-        // Document already exists – should not happen for new signup, but merge update if needed
         const updateData = isAdmin
           ? { displayName: name }
           : { displayName: name, email };
@@ -148,7 +138,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 4. Email/Password Login (with verification check)
+  // ৪. ইমেইল/পাসওয়ার্ড লগইন[cite: 6]
   const login = async (email, password) => {
     setLoading(true);
     try {
@@ -173,7 +163,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 5. Social Login (Google / Apple)
+  // ৫. সোশ্যাল লগইন (গুগল/অ্যাপল)[cite: 6]
   const socialLogin = async (providerName) => {
     setLoading(true);
     try {
@@ -191,7 +181,6 @@ export const AuthProvider = ({ children }) => {
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
-        // Create new document
         const docData = isAdmin
           ? {
               uid: loggedUser.uid,
@@ -204,9 +193,7 @@ export const AuthProvider = ({ children }) => {
               uid: loggedUser.uid,
               displayName: loggedUser.displayName || 'Student',
               email: loggedUser.email,
-              photoURL:
-                loggedUser.photoURL ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
+              photoURL: loggedUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
               role: 'student',
               emailVerified: true,
               personalData: {
@@ -222,15 +209,11 @@ export const AuthProvider = ({ children }) => {
             };
         await setDoc(docRef, docData);
       } else {
-        // Document exists – update only safe fields with merge
         const updateData = {
           displayName: loggedUser.displayName || 'Student',
-          photoURL:
-            loggedUser.photoURL ||
-            `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
+          photoURL: loggedUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${loggedUser.uid}`,
           email: loggedUser.email,
         };
-        // Do NOT include purchasedCourses, paymentHistory, personalData
         await setDoc(docRef, updateData, { merge: true });
       }
 
@@ -242,9 +225,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 6. Logout
+  // ৬. লগআউট[cite: 6]
   const logout = async () => {
-    // Clean up Firestore listener before logout
     if (unsubscribeFirestoreRef.current) {
       unsubscribeFirestoreRef.current();
       unsubscribeFirestoreRef.current = null;
